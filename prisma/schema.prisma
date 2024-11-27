@@ -1,0 +1,151 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URI")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name     String
+  email    String  @unique
+  password String?
+  picture  String  @default("/uploads/no-user-image.png")
+
+  reviews   Review[]
+  favorites Product[]
+
+  stores Store[]
+  orders Order[]
+}
+
+model Store {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  title       String
+  description String?
+
+  products   Product[]
+  categories Category[]
+  colors     Color[]
+  reviews    Review[]
+  orderItems OrderItem[]
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  title       String
+  description String
+  price       Int
+  images      String[]
+
+  reviews    Review[]
+  orderItems OrderItem[]
+
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  storeId String
+
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+
+  color   Color  @relation(fields: [colorId], references: [id])
+  colorId String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  title       String
+  description String
+
+  products Product[]
+
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  storeId String
+}
+
+model Color {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  name  String
+  value String
+
+  products Product[]
+
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  storeId String
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  text   String
+  rating Int
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  storeId String
+}
+
+model Order {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items  OrderItem[]
+  total  Int
+  status EnumOrderStatus @default(PENDING)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quantity Int
+  price    Int
+
+  order   Order  @relation(fields: [orderId], references: [id])
+  orderId String
+
+  store   Store  @relation(fields: [storeId], references: [id])
+  storeId String
+
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+}
+
+enum EnumOrderStatus {
+  PENDING
+  PAYID
+}
