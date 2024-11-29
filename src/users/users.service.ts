@@ -1,5 +1,5 @@
 import { hash } from 'argon2';
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from '@/prisma/prisma.service';
 
@@ -8,14 +8,18 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   public async findById(id: string) {
-    return await this.prisma.user.findUnique({
-      where: { id },
-      include: {
-        stores: true,
-        orders: true,
-        favorites: true,
-      },
-    });
+    try {
+      return await this.prisma.user.findUnique({
+        where: { id },
+        include: {
+          stores: true,
+          orders: true,
+          favorites: true,
+        },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
   }
 
   public async findByEmail(email: string) {
