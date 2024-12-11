@@ -1,11 +1,13 @@
-import { PrismaService } from '@/prisma/prisma.service';
+import ms from 'ms';
+import { JwtService } from '@nestjs/jwt';
 import { hash, verify } from 'argon2';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import ms from 'ms';
+
 import { UsersService } from '@/users/users.service';
+import { PrismaService } from '@/prisma/prisma.service';
+import { RefreshTokenPayload } from './entities/refresh.entitiy';
 
 @Injectable()
 export class TokenService {
@@ -21,7 +23,7 @@ export class TokenService {
   ) {}
 
   public async validateRefreshToken(token: string) {
-    let payload: { jti: string; sub: string };
+    let payload: RefreshTokenPayload;
 
     try {
       payload = this.jwtService.verify(token, {
@@ -33,10 +35,15 @@ export class TokenService {
 
     const existingToken = await this.findRefreshToken(payload.jti);
 
-    const isValidToken =
-      existingToken && existingToken.expiresAt > new Date() && (await verify(token, existingToken.token));
+    if (!existingToken || this.isTokenExpired(existingToken.expiresAt)) {
+      throw new UnauthorizedException('token not found or expired');
+    }
 
-    if (!isValidToken) throw new UnauthorizedException('token is invalid or expired');
+    const isValidToken = await verify(token, existingToken.token);
+
+    if (!isValidToken) {
+      throw new UnauthorizedException('token is invalid');
+    }
 
     return payload;
   }
@@ -115,5 +122,9 @@ export class TokenService {
     } catch (error) {
       throw new NotFoundException('token not found');
     }
+  }
+
+  private isTokenExpired(expiredAt: Date): boolean {
+    return expiredAt < new Date();
   }
 }

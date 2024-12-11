@@ -5,6 +5,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { User } from '@/users/entities/user.entity';
 import { UsersService } from '@/users/users.service';
 import { ConfigService } from '@nestjs/config';
+import { AccessTokenPayload } from '@/token/entities/access.entitiy';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -19,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string }): Promise<User | null> {
+  async validate(payload: AccessTokenPayload): Promise<User | null> {
     const user = this.usersService.findById(payload.sub);
     if (!user) throw new UnauthorizedException();
     return user;
